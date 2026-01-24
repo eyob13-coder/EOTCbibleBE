@@ -630,6 +630,100 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
     }
 };
 
+
+// Update user profile
+export const updateProfile = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const user = req.user;
+
+        if (!user) {
+            res.status(401).json({
+                success: false,
+                message: 'Authentication required'
+            });
+            return;
+        }
+
+        const { name, email, password } = req.body;
+
+        // Find user freshly to ensure consistent state
+        const userToUpdate = await User.findById(user._id);
+        if (!userToUpdate) {
+            res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+            return;
+        }
+
+        // Validate email format if provided
+        if (email && email !== userToUpdate.email) {
+            const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+            if (!emailRegex.test(email)) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Please enter a valid email address'
+                });
+                return;
+            }
+
+            // Check if email is taken
+            const existingUser = await User.findOne({ email: email.toLowerCase() });
+            if (existingUser) {
+                res.status(409).json({
+                    success: false,
+                    message: 'Email already in use'
+                });
+                return;
+            }
+            userToUpdate.email = email.toLowerCase();
+        }
+
+        // Update name if provided
+        if (name) {
+            userToUpdate.name = name;
+        }
+
+        // Update password if provided
+        if (password) {
+            // Validate password strength
+            const passwordValidation = validatePasswordStrength(password);
+            if (!passwordValidation.isValid) {
+                res.status(400).json({
+                    success: false,
+                    message: `Password must contain ${passwordValidation.errors.join(', ')}`
+                });
+                return;
+            }
+            userToUpdate.password = password; // Pre-save hook will hash this
+        }
+
+        await userToUpdate.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Profile updated successfully',
+            data: {
+                user: {
+                    id: userToUpdate._id,
+                    name: userToUpdate.name,
+                    email: userToUpdate.email,
+                    avatarUrl: userToUpdate.avatarUrl,
+                    settings: userToUpdate.settings,
+                    streak: userToUpdate.streak
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error('Update profile error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error while updating profile'
+        });
+    }
+};
+
 // Logout user
 export const logout = async (req: Request, res: Response): Promise<void> => {
     try {
