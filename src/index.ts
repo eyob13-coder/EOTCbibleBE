@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
+import path from 'path';
+import fs from 'fs';
 import swaggerOptions from './config/swagger';
 import corsMiddleware from './config/cors';
 import authRoutes from './routes/auth.routes';
@@ -86,6 +88,13 @@ process.on('SIGINT', async () => {
 app.use(corsMiddleware); // Enable CORS for frontend integration (Next.js, React, etc.)
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Static serving for uploaded files (e.g., profile avatars)
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+app.use('/uploads', express.static(uploadsDir));
 
 
 

@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import path from 'path';
+import fs from 'fs';
 // ... email sending handled by emailService
 import dayjs from 'dayjs';
 import { User, IUser, Progress, Bookmark, Note, Highlight, Topic, BlacklistedToken, OTP } from '../models';
@@ -573,6 +575,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
                     id: user._id,
                     name: user.name,
                     email: user.email,
+                    avatarUrl: user.avatarUrl,
                     settings: user.settings,
                     streak: user.streak
                 },
@@ -611,6 +614,7 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
                     id: user._id,
                     name: user.name,
                     email: user.email,
+                    avatarUrl: user.avatarUrl,
                     settings: user.settings,
                     streak: user.streak
                 }
@@ -723,6 +727,141 @@ export const deleteAccount = async (req: Request, res: Response): Promise<void> 
         res.status(500).json({
             success: false,
             message: 'Internal server error during account deletion'
+        });
+    }
+};
+
+// Helper to delete an avatar file from disk, if it exists
+const deleteAvatarFileIfExists = (avatarUrl?: string | null): void => {
+    if (!avatarUrl) return;
+
+    const segment = '/uploads/avatars/';
+    const segmentIndex = avatarUrl.indexOf(segment);
+    if (segmentIndex === -1) return;
+
+    const filename = avatarUrl.substring(segmentIndex + segment.length);
+    if (!filename) return;
+
+    const avatarsDir = path.join(__dirname, '..', '..', 'uploads', 'avatars');
+    const filePath = path.join(avatarsDir, filename);
+
+    fs.unlink(filePath, (err) => {
+        if (err && (err as any).code !== 'ENOENT') {
+            console.error('Error deleting avatar file:', err);
+        }
+    });
+};
+
+// Upload or update user profile avatar
+export const uploadAvatar = async (
+    req: Request & { file?: any },
+    res: Response
+): Promise<void> => {
+    try {
+        const user = req.user;
+
+        if (!user) {
+            res.status(401).json({
+                success: false,
+                message: 'Authentication required'
+            });
+            return;
+        }
+
+        if (!req.file) {
+            res.status(400).json({
+                success: false,
+                message: 'No image file uploaded'
+            });
+            return;
+        }
+
+        // Remove previous avatar file if present
+        if (user.avatarUrl) {
+            deleteAvatarFileIfExists(user.avatarUrl);
+        }
+
+        // Build base URL for serving uploaded files
+        const baseUrl =
+            (process.env.APP_URL && process.env.APP_URL.trim()) ||
+            (process.env.BACKEND_URL && process.env.BACKEND_URL.trim()) ||
+            (process.env.FRONTEND_URL && process.env.FRONTEND_URL.trim()) ||
+            `http://localhost:${process.env.PORT || 3000}`;
+
+        const avatarPath = `/uploads/avatars/${req.file.filename}`;
+        user.avatarUrl = `${baseUrl}${avatarPath}`;
+
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Profile image updated successfully',
+            data: {
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    avatarUrl: user.avatarUrl,
+                    settings: user.settings,
+                    streak: user.streak
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Upload avatar error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error while uploading avatar'
+        });
+    }
+};
+
+// Delete the current user's avatar
+export const deleteAvatar = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const user = req.user;
+
+        if (!user) {
+            res.status(401).json({
+                success: false,
+                message: 'Authentication required'
+            });
+            return;
+        }
+
+        if (!user.avatarUrl) {
+            res.status(400).json({
+                success: false,
+                message: 'No avatar to delete'
+            });
+            return;
+        }
+
+        // Delete file from disk (if present)
+        deleteAvatarFileIfExists(user.avatarUrl);
+
+        user.avatarUrl = null as any;
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Profile image deleted successfully',
+            data: {
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    avatarUrl: user.avatarUrl,
+                    settings: user.settings,
+                    streak: user.streak
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Delete avatar error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error while deleting avatar'
         });
     }
 };
