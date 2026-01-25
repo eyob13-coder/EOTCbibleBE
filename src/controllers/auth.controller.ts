@@ -4,7 +4,6 @@ import * as jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
-// ... email sending handled by emailService
 import dayjs from 'dayjs';
 import { User, IUser, Progress, Bookmark, Note, Highlight, Topic, BlacklistedToken, OTP } from '../models';
 import { emailService } from '../utils/emailService';
@@ -875,15 +874,23 @@ export const uploadAvatar = async (
             deleteAvatarFileIfExists(user.avatarUrl);
         }
 
-        // Build base URL for serving uploaded files
-        const baseUrl =
-            (process.env.APP_URL && process.env.APP_URL.trim()) ||
-            (process.env.BACKEND_URL && process.env.BACKEND_URL.trim()) ||
-            (process.env.FRONTEND_URL && process.env.FRONTEND_URL.trim()) ||
-            `http://localhost:${process.env.PORT || 3000}`;
+        // When using Cloudinary storage, req.file.path contains the full secure URL
+        // We log it for debugging, but we strictly use the path provided by Cloudinary.
+        console.log('🖼️ Upload File Info:', JSON.stringify(req.file, null, 2));
 
-        const avatarPath = `/uploads/avatars/${req.file.filename}`;
-        user.avatarUrl = `${baseUrl}${avatarPath}`;
+        // In multer-storage-cloudinary, 'path' is the HTTPS URL.
+        const avatarUrl = req.file.path;
+
+        if (!avatarUrl) {
+            console.error('❌ Cloudinary did not return a path/url');
+            res.status(500).json({
+                success: false,
+                message: 'Image upload failed: no URL returned'
+            });
+            return;
+        }
+
+        user.avatarUrl = avatarUrl;
 
         await user.save();
 

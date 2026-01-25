@@ -1,26 +1,16 @@
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import { v2 as cloudinary } from 'cloudinary';
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
-
-// Ensure the avatars upload directory exists
-const avatarsUploadDir = path.join(__dirname, '..', '..', 'uploads', 'avatars');
-fs.mkdirSync(avatarsUploadDir, { recursive: true });
+import '../config/cloudinary.config'; // Import config to ensure cloudinary is configured
 
 // Configure storage for avatar images
-const avatarStorage = multer.diskStorage({
-    destination: (_req, _file, cb) => {
-        cb(null, avatarsUploadDir);
-    },
-    filename: (req, file, cb) => {
-        const userId =
-            (req as any).user?._id?.toString() ||
-            'anonymous';
-        const timestamp = Date.now();
-        const random = Math.round(Math.random() * 1e9);
-        const ext = path.extname(file.originalname) || '';
-        const sanitizedExt = ext.toLowerCase();
-        cb(null, `${userId}-${timestamp}-${random}${sanitizedExt}`);
-    }
+const avatarStorage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'avatars',
+        allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
+        transformation: [{ width: 500, height: 500, crop: 'limit' }] // Optimize image size
+    } as any // Cast to any because CloudinaryStorage params type is not perfectly aligned
 });
 
 // Allow only image mime types
@@ -38,5 +28,3 @@ export const uploadAvatarMiddleware = multer({
         fileSize: 5 * 1024 * 1024 // 5MB
     }
 }).single('avatar');
-
-
