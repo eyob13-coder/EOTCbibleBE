@@ -26,7 +26,9 @@ beforeAll(async () => {
     }
 
     // Connect to test MongoDB
-    const uri = process.env.MONGODB_URI || `mongodb://localhost:27017/${process.env.DB_NAME}`;
+    // Force local connection for tests to avoid remote DB timeouts/connectivity issues
+    const uri = 'mongodb://localhost:27017/tsbackend_test';
+    process.env.MONGODB_URI = uri; // Ensure env var is updated too
     await mongoose.connect(uri, { autoIndex: true });
 });
 
