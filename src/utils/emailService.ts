@@ -14,7 +14,7 @@ class EmailService {
 
     constructor() {
         // Validate App Password configuration
-        if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
+        if ((!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) && process.env.NODE_ENV !== 'test') {
             const missingVars = [];
             if (!process.env.EMAIL_USER) missingVars.push('EMAIL_USER');
             if (!process.env.EMAIL_APP_PASSWORD) missingVars.push('EMAIL_APP_PASSWORD');
@@ -23,11 +23,20 @@ class EmailService {
         }
 
         // Use App Password configuration
-        this.config = {
-            type: 'AppPassword',
-            user: process.env.EMAIL_USER,
-            password: process.env.EMAIL_APP_PASSWORD
-        };
+        if (process.env.NODE_ENV === 'test' && (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD)) {
+            console.warn('⚠️  Running in TEST mode with dummy email credentials');
+            this.config = {
+                type: 'AppPassword',
+                user: 'test@example.com',
+                password: 'dummy-password'
+            };
+        } else {
+            this.config = {
+                type: 'AppPassword',
+                user: process.env.EMAIL_USER as string,
+                password: process.env.EMAIL_APP_PASSWORD as string
+            };
+        }
 
         // Create transporter based on configuration
         this.transporter = this.createTransporter();
