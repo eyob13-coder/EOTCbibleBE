@@ -24,8 +24,8 @@ dotenv.config();
 
 // Environment variable validation
 const NODE_ENV = process.env.NODE_ENV;
-const PORT = process.env.PORT;
-const DB_NAME = process.env.DB_NAME;
+const PORT = process.env.PORT || (process.env.NODE_ENV === 'test' ? '5000' : undefined);
+const DB_NAME = process.env.DB_NAME || (process.env.NODE_ENV === 'test' ? 'EOTCBIBLE_TEST' : undefined);
 const MONGODB_URI = process.env.MONGODB_URI;
 
 // Validate required environment variables
