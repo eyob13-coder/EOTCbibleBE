@@ -4,14 +4,16 @@ import multer from 'multer';
 import '../config/cloudinary.config'; // Import config to ensure cloudinary is configured
 
 // Configure storage for avatar images
-const avatarStorage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-        folder: 'avatars',
-        allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
-        transformation: [{ width: 500, height: 500, crop: 'limit' }] // Optimize image size
-    } as any // Cast to any because CloudinaryStorage params type is not perfectly aligned
-});
+const avatarStorage = process.env.NODE_ENV === 'test'
+    ? multer.memoryStorage()
+    : new CloudinaryStorage({
+        cloudinary: cloudinary,
+        params: {
+            folder: 'avatars',
+            allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
+            transformation: [{ width: 500, height: 500, crop: 'limit' }] // Optimize image size
+        } as any // Cast to any because CloudinaryStorage params type is not perfectly aligned
+    });
 
 // Allow only image mime types
 const avatarFileFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
