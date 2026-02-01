@@ -108,7 +108,8 @@ export const getTopics = async (req: Request, res: Response): Promise<void> => {
         // Parse pagination parameters
         const paginationOptions = parsePaginationQuery(req.query as PaginationQuery, 10, 50);
 
-        let query: any = { userId };
+        // query definition
+        const query: any = { userId };
 
         // Add search functionality
         if (search && typeof search === 'string') {

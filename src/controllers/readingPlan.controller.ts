@@ -105,8 +105,9 @@ export const getPlans = async (req: Request, res: Response): Promise<void> => {
             return;
         }
 
-        let page = parseInt(req.query.page as string) || 1;
-        let limit = parseInt(req.query.limit as string) || 10;
+        // pagination params
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
         const paginationOptions = parsePaginationQuery(req.query as PaginationQuery, 10, 50);
 
         // Filter: Own plans OR Public plans OR Shared with user
