@@ -1,0 +1,40 @@
+
+
+services:
+  api:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - MONGODB_URI=mongodb://mongo:27017/EOTCBIBLE
+      # Add other environment variables here or use env_file
+      # - JWT_SECRET=your_jwt_secret
+      # - CLOUDINARY_CLOUD_NAME=your_cloud_name
+      # - CLOUDINARY_API_KEY=your_api_key
+      # - CLOUDINARY_API_SECRET=your_api_secret
+    env_file:
+      - .env
+    depends_on:
+      - mongo
+    volumes:
+      - ./uploads:/app/uploads
+    networks:
+      - app-network
+
+  mongo:
+    image: mongo:6.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
