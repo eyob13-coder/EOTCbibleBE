@@ -9,6 +9,8 @@ import { User, IUser, Progress, Bookmark, Note, Highlight, Topic, BlacklistedTok
 import { emailService } from '../utils/emailService';
 import { generateOTP, validateOTPFormat, calculateOTPExpiration, isOTPExpired } from '../utils/otpUtils';
 import axios from 'axios';
+import cloudinary from '../config/cloudinary.config';
+
 
 
 
@@ -824,10 +826,33 @@ export const deleteAccount = async (req: Request, res: Response): Promise<void> 
     }
 };
 
-// Helper to delete an avatar file from disk, if it exists
-const deleteAvatarFileIfExists = (avatarUrl?: string | null): void => {
+// Helper to delete an avatar file from Cloudinary or disk
+const deleteAvatarFileIfExists = async (avatarUrl?: string | null): Promise<void> => {
     if (!avatarUrl) return;
 
+    // Check if it's a Cloudinary URL
+    if (avatarUrl.includes('cloudinary.com')) {
+        try {
+            // Extract public_id from URL (e.g., avatars/public_id)
+            const parts = avatarUrl.split('/');
+            const uploadIndex = parts.indexOf('upload');
+            if (uploadIndex !== -1 && parts.length > uploadIndex + 2) {
+                // Join the parts after version (e.g., v123/avatars/id -> avatars/id)
+                const publicIdWithExtension = parts.slice(uploadIndex + 2).join('/');
+                const publicId = publicIdWithExtension.split('.')[0];
+
+                if (publicId) {
+                    const result = await cloudinary.uploader.destroy(publicId);
+                    console.log(`🗑️ Cloudinary file deleted: ${publicId}`, result);
+                }
+            }
+        } catch (error) {
+            console.error('Error deleting Cloudinary avatar:', error);
+        }
+        return;
+    }
+
+    // Fallback for local disk storage (legacy)
     const segment = '/uploads/avatars/';
     const segmentIndex = avatarUrl.indexOf(segment);
     if (segmentIndex === -1) return;
@@ -840,14 +865,15 @@ const deleteAvatarFileIfExists = (avatarUrl?: string | null): void => {
 
     fs.unlink(filePath, (err) => {
         if (err && (err as any).code !== 'ENOENT') {
-            console.error('Error deleting avatar file:', err);
+            console.error('Error deleting local avatar file:', err);
         }
     });
 };
 
 // Upload or update user profile avatar
 export const uploadAvatar = async (
-    req: Request & { file?: any },
+    // Handle avatar upload
+    req: Request & { file?: any; files?: any },
     res: Response
 ): Promise<void> => {
     try {
@@ -861,7 +887,18 @@ export const uploadAvatar = async (
             return;
         }
 
-        if (!req.file) {
+        // Handle both .single('avatar') and .fields([{ name: 'avatar' }, { name: 'Avatar' }])
+        let file = req.file;
+
+        if (!file && req.files) {
+            // Check for avatar or Avatar fields when using .fields()
+            const avatarFiles = req.files.avatar || req.files.Avatar;
+            if (avatarFiles && avatarFiles.length > 0) {
+                file = avatarFiles[0];
+            }
+        }
+
+        if (!file) {
             res.status(400).json({
                 success: false,
                 message: 'No image file uploaded'
@@ -871,18 +908,20 @@ export const uploadAvatar = async (
 
         // Remove previous avatar file if present
         if (user.avatarUrl) {
-            deleteAvatarFileIfExists(user.avatarUrl);
+            await deleteAvatarFileIfExists(user.avatarUrl);
         }
 
-        // When using Cloudinary storage, req.file.path contains the full secure URL
+        // When using Cloudinary storage, file.path contains the full secure URL
         // We log it for debugging, but we strictly use the path provided by Cloudinary.
-        console.log('🖼️ Upload File Info:', JSON.stringify(req.file, null, 2));
+        console.log('🖼️ Upload File Info:', JSON.stringify(file, null, 2));
 
-        // In multer-storage-cloudinary, 'path' is the HTTPS URL.
-        const avatarUrl = req.file.path;
+        // In multer-storage-cloudinary, 'path' is usually the HTTPS URL.
+        // But some versions or configs might use 'secure_url' or 'url'.
+        const avatarUrl = file.path || file.secure_url || file.url;
 
         if (!avatarUrl) {
             console.error('❌ Cloudinary did not return a path/url');
+            console.error('📄 File object structure:', JSON.stringify(file, null, 2));
             res.status(500).json({
                 success: false,
                 message: 'Image upload failed: no URL returned'
@@ -938,8 +977,8 @@ export const deleteAvatar = async (req: Request, res: Response): Promise<void> =
             return;
         }
 
-        // Delete file from disk (if present)
-        deleteAvatarFileIfExists(user.avatarUrl);
+        // Delete file from disk or Cloudinary
+        await deleteAvatarFileIfExists(user.avatarUrl);
 
         user.avatarUrl = null as any;
         await user.save();

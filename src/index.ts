@@ -1,3 +1,6 @@
+// IMPORTANT: Import Sentry instrumentation first, before any other imports
+import './instrument';
+import * as Sentry from '@sentry/node';
 import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
@@ -220,6 +223,27 @@ app.get('/api/v1/health', (req, res) => {
             host: isConnected ? mongoose.connection.host : null,
             port: isConnected ? mongoose.connection.port : null
         }
+    });
+});
+
+// Test route for Sentry error tracking
+app.get('/debug-sentry', function mainHandler(req, res) {
+    throw new Error('My first Sentry error!');
+});
+
+// The Sentry error handler must be registered before any other error middleware and after all controllers
+Sentry.setupExpressErrorHandler(app);
+
+// Optional fallthrough error handler
+app.use(function onError(err: any, req: express.Request, res: express.Response, next: express.NextFunction) {
+    // The error id is attached to `res.sentry` to be returned
+    // and optionally displayed to the user for support.
+    console.error('❌ Error:', err);
+    res.statusCode = 500;
+    res.json({
+        success: false,
+        message: 'Internal server error',
+        errorId: (res as any).sentry // Sentry error ID for tracking
     });
 });
 

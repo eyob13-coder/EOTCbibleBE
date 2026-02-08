@@ -1,22 +1,21 @@
 // Test setup file
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 
 // Load environment variables from .env
 dotenv.config();
 
 // Ensure tests use a separate database and consistent JWT secret
-process.env.NODE_ENV = process.env.NODE_ENV || 'test';
-process.env.DB_NAME = process.env.DB_NAME || 'tsbackend_test';
-process.env.MONGODB_URI = process.env.MONGODB_URI || `mongodb://localhost:27017/${process.env.DB_NAME}`;
+process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret';
 process.env.JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1h';
-
-
 
 // Mock console methods to reduce noise in tests
 const originalConsoleLog = console.log;
 const originalConsoleError = console.error;
-import mongoose from 'mongoose';
+
+let mongoServer: MongoMemoryServer;
 
 beforeAll(async () => {
     // Optionally mock console output during tests to reduce noise
@@ -25,16 +24,25 @@ beforeAll(async () => {
         console.error = jest.fn();
     }
 
-    // Connect to test MongoDB
-    // Force local connection for tests to avoid remote DB timeouts/connectivity issues
-    const uri = 'mongodb://localhost:27017/tsbackend_test';
-    process.env.MONGODB_URI = uri; // Ensure env var is updated too
-    await mongoose.connect(uri, { autoIndex: true });
+    // Start MongoMemoryServer
+    mongoServer = await MongoMemoryServer.create();
+    const uri = mongoServer.getUri();
+    process.env.MONGODB_URI = uri;
+
+    try {
+        await mongoose.connect(uri, { autoIndex: true });
+    } catch (error) {
+        console.error('\n❌ Failed to connect to MongoMemoryServer at', uri);
+        throw error;
+    }
 });
 
 afterAll(async () => {
-    // Disconnect mongoose and restore console
+    // Disconnect mongoose, stop mongoServer and restore console
     await mongoose.disconnect();
+    if (mongoServer) {
+        await mongoServer.stop();
+    }
     console.log = originalConsoleLog;
     console.error = originalConsoleError;
 });

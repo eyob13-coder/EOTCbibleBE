@@ -1,18 +1,21 @@
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
-import { v2 as cloudinary } from 'cloudinary';
+import cloudinary from 'cloudinary';
 import multer from 'multer';
+import * as multerCloudinary from 'multer-storage-cloudinary';
 import '../config/cloudinary.config'; // Import config to ensure cloudinary is configured
+
+// Get the factory function from the module (handles CommonJS interop)
+const CloudinaryStorage = (multerCloudinary as { default?: unknown }).default || multerCloudinary;
 
 // Configure storage for avatar images
 const avatarStorage = process.env.NODE_ENV === 'test'
     ? multer.memoryStorage()
-    : new CloudinaryStorage({
+    : (CloudinaryStorage as (opts: unknown) => multer.StorageEngine)({
         cloudinary: cloudinary,
         params: {
             folder: 'avatars',
             allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
             transformation: [{ width: 500, height: 500, crop: 'limit' }] // Optimize image size
-        } as any // Cast to any because CloudinaryStorage params type is not perfectly aligned
+        }
     });
 
 // Allow only image mime types
@@ -29,4 +32,7 @@ export const uploadAvatarMiddleware = multer({
     limits: {
         fileSize: 5 * 1024 * 1024 // 5MB
     }
-}).single('avatar');
+}).fields([
+    { name: 'avatar', maxCount: 1 },
+    { name: 'Avatar', maxCount: 1 }
+]);
