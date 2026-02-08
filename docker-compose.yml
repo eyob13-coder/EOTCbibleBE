@@ -6,8 +6,8 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3000
-      - MONGODB_URI=mongodb+srv://eyobgeremew618_db_user:ReQ6HgZvApeZXSSa@eotc.afontvn.mongodb.net/EOTCBIBLE?appName=EOTC
-      - SENTRY_DSN=your_sentry_dsn
+      - MONGODB_URI=${MONGODB_URI}
+      - SENTRY_DSN=${SENTRY_DSN}
     env_file:
       - .env
     volumes:
