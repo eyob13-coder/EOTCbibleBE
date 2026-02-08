@@ -1,6 +1,6 @@
 # TypeScript Backend Project
 
-A Node.js backend project built with TypeScript, Express, and MongoDB.
+ A Node.js backend project built with TypeScript, Express, and MongoDB.
 
 ## Features
 
