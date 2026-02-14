@@ -24,6 +24,8 @@ export const connectRedis = async () => {
     }
 };
 
+export const isRedisConnected = (): boolean => isConnected;
+
 
 // Get data from cache
 
@@ -101,6 +103,7 @@ export const disconnectRedis = async (): Promise<void> => {
 
 export default {
     connectRedis,
+    isRedisConnected,
     getCache,
     setCache,
     deleteCache,

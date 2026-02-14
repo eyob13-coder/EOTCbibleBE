@@ -24,7 +24,7 @@ import dataRoutes from './routes/data.routes';
 import readingPlanRoutes from './routes/readingPlan.routes';
 import { cleanupExpiredTokens } from './utils/tokenCleanup';
 import { emailService } from './utils/emailService';
-import { connectRedis, disconnectRedis } from './utils/cache';
+import { connectRedis, disconnectRedis, isRedisConnected } from './utils/cache';
 
 // Environment variable validation
 const NODE_ENV = process.env.NODE_ENV;
@@ -214,8 +214,11 @@ app.get('/', (req, res) => {
 // Combined health and database status route
 app.get('/api/v1/health', (req, res) => {
     const isConnected = mongoose.connection.readyState === 1;
+    const redisConnected = isRedisConnected();
+    const status = isConnected && redisConnected ? 'OK' : 'DEGRADED';
+
     res.json({
-        status: 'OK',
+        status,
         uptime: process.uptime(),
         timestamp: new Date().toISOString(),
         database: {
@@ -224,6 +227,9 @@ app.get('/api/v1/health', (req, res) => {
             actualName: isConnected ? mongoose.connection.name : null,
             host: isConnected ? mongoose.connection.host : null,
             port: isConnected ? mongoose.connection.port : null
+        },
+        redis: {
+            status: redisConnected ? 'Connected' : 'Disconnected'
         }
     });
 });

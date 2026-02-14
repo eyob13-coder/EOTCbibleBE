@@ -43,6 +43,30 @@ jobs:
             npm ci
           fi
 
+      - name: Validate required keys in .env.example
+        run: |
+          required_keys=(
+            NODE_ENV PORT MONGODB_URI DB_NAME
+            JWT_SECRET JWT_EXPIRES_IN
+            EMAIL_USER EMAIL_APP_PASSWORD EMAIL_FROM_NAME
+            CLOUDINARY_CLOUD_NAME CLOUDINARY_API_KEY CLOUDINARY_API_SECRET
+            REDIS_URL
+          )
+          for key in "${required_keys[@]}"; do
+            if ! grep -qE "^${key}=" .env.example; then
+              echo "Missing ${key} in .env.example"
+              exit 1
+            fi
+          done
+
+      - name: Validate docker compose manifests
+        run: |
+          export MONGODB_URI=mongodb://mongo:27017/EOTCBIBLE
+          export SENTRY_DSN=https://example@sentry.io/123
+          export REDIS_URL=redis://redis:6379
+          export CLOUDINARY_URL=cloudinary://12345:dummy@dummy
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml config >/dev/null
+
       - name: Check Linting
         run: npm run lint
 
