@@ -13,22 +13,20 @@ client.on('connect', () => {
     console.log('✅ Redis connected successfully');
 });
 
-const connectRedis = async () => {
+export const connectRedis = async () => {
     if (!isConnected) {
         try {
             await client.connect();
         } catch (error) {
             console.error('❌ Failed to connect to Redis:', error);
+
         }
     }
 };
 
-// Initialize connection
-connectRedis();
 
-/**
- * Get data from cache
- */
+// Get data from cache
+
 export const getCache = async <T>(key: string): Promise<T | null> => {
     if (!isConnected) return null;
     try {
@@ -40,9 +38,9 @@ export const getCache = async <T>(key: string): Promise<T | null> => {
     }
 };
 
-/**
- * Set data to cache with optional TTL (in seconds)
- */
+
+// Set data to cache with optional TTL (in seconds)
+
 export const setCache = async (key: string, value: any, ttl: number = 3600): Promise<void> => {
     if (!isConnected) return;
     try {
@@ -55,9 +53,9 @@ export const setCache = async (key: string, value: any, ttl: number = 3600): Pro
     }
 };
 
-/**
- * Delete data from cache
- */
+
+// Delete data from cache
+
 export const deleteCache = async (key: string): Promise<void> => {
     if (!isConnected) return;
     try {
@@ -67,29 +65,32 @@ export const deleteCache = async (key: string): Promise<void> => {
     }
 };
 
-/**
- * Delete multiple keys matching a pattern
- * Use with caution in production on large datasets
- */
+
+// Delete multiple keys matching a pattern
+
 export const deleteCacheByPattern = async (pattern: string): Promise<void> => {
     if (!isConnected) return;
     try {
-        const keys = await client.keys(pattern);
-        if (keys.length > 0) {
-            await client.del(keys);
+        const iterator = client.scanIterator({
+            MATCH: pattern,
+            COUNT: 100 // Process in batches
+        });
+
+        for await (const key of iterator) {
+            await client.del(key);
         }
     } catch (error) {
         console.error(`Error deleting cache by pattern ${pattern}:`, error);
     }
 };
 
-/**
- * Disconnect from Redis
- */
+
+// Disconnect from Redis
+
 export const disconnectRedis = async (): Promise<void> => {
     if (isConnected) {
         try {
-            await client.destroy();
+            await client.destroy(); // destroy is forceful, quit is graceful. destroy is usually better for cleanup.
             isConnected = false;
             console.log('✅ Redis disconnected successfully');
         } catch (error) {
@@ -99,6 +100,7 @@ export const disconnectRedis = async (): Promise<void> => {
 };
 
 export default {
+    connectRedis,
     getCache,
     setCache,
     deleteCache,

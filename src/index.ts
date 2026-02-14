@@ -24,6 +24,7 @@ import dataRoutes from './routes/data.routes';
 import readingPlanRoutes from './routes/readingPlan.routes';
 import { cleanupExpiredTokens } from './utils/tokenCleanup';
 import { emailService } from './utils/emailService';
+import { connectRedis, disconnectRedis } from './utils/cache';
 
 // Environment variable validation
 const NODE_ENV = process.env.NODE_ENV;
@@ -79,10 +80,11 @@ mongoose.connection.on('disconnected', () => {
 process.on('SIGINT', async () => {
     try {
         await mongoose.connection.close();
-        console.log('✅ MongoDB connection closed through app termination');
+        await disconnectRedis();
+        console.log('✅ MongoDB and Redis connections closed through app termination');
         process.exit(0);
     } catch (error) {
-        console.error('❌ Error during MongoDB connection closure:', error);
+        console.error('❌ Error during connection closure:', error);
         process.exit(1);
     }
 });
@@ -252,6 +254,9 @@ const startServer = async (): Promise<void> => {
     try {
         // Connect to MongoDB first
         await connectToDatabase();
+
+        // Connect to Redis
+        await connectRedis();
 
         // Verify email service connection
         const emailServiceWorking = await emailService.verifyConnection();
