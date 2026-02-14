@@ -63,7 +63,10 @@ jobs:
           JWT_SECRET: testing_secret_key
           MONGODB_URI: mongodb://localhost:27017/EOTCBIBLE_TEST
           REDIS_URL: redis://localhost:6379
-          CLOUDINARY_URL: ${{ secrets.CLOUDINARY_URL }}
+          CLOUDINARY_URL: ${{ secrets.CLOUDINARY_URL || 'cloudinary://12345:dummy@dummy' }}
+          CLOUDINARY_CLOUD_NAME: dummy
+          CLOUDINARY_API_KEY: 12345
+          CLOUDINARY_API_SECRET: dummy
 
       - name: Build
         run: |

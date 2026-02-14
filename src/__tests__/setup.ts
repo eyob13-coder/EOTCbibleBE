@@ -2,6 +2,7 @@
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { disconnectRedis } from '../utils/cache';
 
 // Load environment variables from .env
 dotenv.config();
@@ -43,6 +44,8 @@ afterAll(async () => {
     if (mongoServer) {
         await mongoServer.stop();
     }
+    // Disconnect Redis
+    await disconnectRedis();
     console.log = originalConsoleLog;
     console.error = originalConsoleError;
 });

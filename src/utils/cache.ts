@@ -83,9 +83,25 @@ export const deleteCacheByPattern = async (pattern: string): Promise<void> => {
     }
 };
 
+/**
+ * Disconnect from Redis
+ */
+export const disconnectRedis = async (): Promise<void> => {
+    if (isConnected) {
+        try {
+            await client.destroy();
+            isConnected = false;
+            console.log('✅ Redis disconnected successfully');
+        } catch (error) {
+            console.error('❌ Error disconnecting from Redis:', error);
+        }
+    }
+};
+
 export default {
     getCache,
     setCache,
     deleteCache,
-    deleteCacheByPattern
+    deleteCacheByPattern,
+    disconnectRedis
 };
