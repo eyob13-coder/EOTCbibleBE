@@ -12,8 +12,6 @@ services:
       SENTRY_DSN: ${SENTRY_DSN}
       REDIS_URL: redis://redis:6379
       CLOUDINARY_URL: ${CLOUDINARY_URL}  # Cloudinary config
-    env_file:
-      - .env
     depends_on:
       - mongo
       - redis
