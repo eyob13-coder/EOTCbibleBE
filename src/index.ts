@@ -1,9 +1,13 @@
-// IMPORTANT: Import Sentry instrumentation first, before any other imports
+import dotenv from 'dotenv';
+// Load environment variables as early as possible
+dotenv.config();
+
+
+// IMPORTANT: Import Sentry instrumentation after loading environment variables
 import './instrument';
 import * as Sentry from '@sentry/node';
 import express from 'express';
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import path from 'path';
@@ -20,10 +24,6 @@ import dataRoutes from './routes/data.routes';
 import readingPlanRoutes from './routes/readingPlan.routes';
 import { cleanupExpiredTokens } from './utils/tokenCleanup';
 import { emailService } from './utils/emailService';
-
-
-// Load environment variables
-dotenv.config();
 
 // Environment variable validation
 const NODE_ENV = process.env.NODE_ENV;
