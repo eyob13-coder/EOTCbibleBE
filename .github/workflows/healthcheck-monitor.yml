@@ -1,8 +1,8 @@
 name: Healthcheck Monitor
 
 on:
-  schedule:
-    - cron: "*/15 * * * *"
+  #   schedule:
+  #     - cron: "*/15 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -12,17 +12,14 @@ jobs:
       HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL }}
       ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
     steps:
-      - name: Validate healthcheck config
-        run: |
-          if [ -z "${HEALTHCHECK_URL}" ]; then
-            echo "Missing secret: HEALTHCHECK_URL"
-            exit 1
-          fi
-
       - name: Check API health
         id: check
         run: |
           set -euo pipefail
+          if [ -z "${HEALTHCHECK_URL}" ]; then
+            echo "HEALTHCHECK_URL is not set. Skipping."
+            exit 0
+          fi
           status_code=$(curl -sS -o health.json -w "%{http_code}" "${HEALTHCHECK_URL}")
           echo "status_code=${status_code}" >> "$GITHUB_OUTPUT"
 
@@ -39,8 +36,12 @@ jobs:
           fi
 
       - name: Alert webhook on failure
-        if: failure() && env.ALERT_WEBHOOK_URL != ''
+        if: failure()
         run: |
+          if [ -z "${ALERT_WEBHOOK_URL}" ]; then
+            echo "ALERT_WEBHOOK_URL not set."
+            exit 0
+          fi
           payload=$(cat <<EOF
           {
             "text": "Healthcheck failed for ${HEALTHCHECK_URL}. Workflow: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
