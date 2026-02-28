@@ -23,10 +23,10 @@ let transporter: EmailTransporter;
 console.log("EMAIL_USER:", process.env.EMAIL_USER);
 console.log(
   "EMAIL_PASSWORD:",
-  process.env.EMAIL_PASSWORD ? "✅ set" : "❌ missing"
+  (process.env.EMAIL_APP_PASSWORD || process.env.EMAIL_PASSWORD) ? "✅ set" : "❌ missing"
 );
 
-if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+if (!process.env.EMAIL_USER || (!process.env.EMAIL_APP_PASSWORD && !process.env.EMAIL_PASSWORD)) {
   console.warn(
     "⚠️ Email credentials not set. Using mock transporter (emails will only be logged)."
   );
@@ -43,14 +43,17 @@ if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
     },
   };
 } else {
+  const emailPort = Number(process.env.EMAIL_PORT) || 587;
+  const emailSecure = process.env.EMAIL_SECURE === 'true' || emailPort === 465;
+
   // Create real Gmail transporter
   transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST || "smtp.gmail.com",
-    port: Number(process.env.EMAIL_PORT) || 587,
-    secure: false, // true for 465
+    port: emailPort,
+    secure: emailSecure,
     auth: {
       user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD,
+      pass: process.env.EMAIL_APP_PASSWORD || process.env.EMAIL_PASSWORD,
     },
     tls: { rejectUnauthorized: false },
     debug: true, // optional SMTP debug logs
