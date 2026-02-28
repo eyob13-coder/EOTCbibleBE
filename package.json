@@ -39,6 +39,10 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"
   },
+  "overrides": {
+    "ajv": "^8.17.1",
+    "fast-xml-parser": "^4.4.1"
+  },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^4.17.23",
