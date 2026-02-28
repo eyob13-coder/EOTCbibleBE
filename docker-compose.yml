@@ -9,9 +9,8 @@ services:
       MONGODB_URI: ${MONGODB_URI}
       SENTRY_DSN: ${SENTRY_DSN}
       REDIS_URL: redis://redis:6379
-      CLOUDINARY_URL: ${CLOUDINARY_URL}  # Cloudinary config
+      CLOUDINARY_URL: ${CLOUDINARY_URL} # Cloudinary config
     depends_on:
-      - mongo
       - redis
     networks:
       - app-network
@@ -23,18 +22,6 @@ services:
     networks:
       - app-network
 
-  mongo:
-    image: mongo:6.0
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
-    networks:
-      - app-network
-
 networks:
   app-network:
     driver: bridge
-
-volumes:
-  mongo-data:
