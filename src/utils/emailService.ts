@@ -1,80 +1,112 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY || 'test_key');
-const fromEmail = process.env.EMAIL_FROM_ADDRESS || 'onboarding@resend.dev';
-const fromName = process.env.EMAIL_FROM_NAME || 'EOTCOpenSource';
+// Lazy-initialized Resend client — ensures process.env is read at call time,
+// not at module-load time (before dotenv has run).
+let _resend: Resend | null = null;
 
-function getFrom(): string {
-    return `${fromName} <${fromEmail}>`;
+const getResendClient = (): Resend => {
+  if (!_resend) {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      console.error('❌ RESEND_API_KEY is not set. Emails will fail.');
+    }
+    _resend = new Resend(apiKey || 'test_key');
+  }
+  return _resend;
+}
+
+const getFrom = (): string => {
+  const fromEmail = process.env.EMAIL_FROM_ADDRESS || 'onboarding@resend.dev';
+  const fromName = process.env.EMAIL_FROM_NAME || 'EOTCOpenSource';
+  return `${fromName} <${fromEmail}>`;
 }
 
 // Send OTP email
-async function sendOTPEmail(email: string, otp: string, userName: string): Promise<void> {
-    try {
-        await resend.emails.send({
-            from: getFrom(),
-            to: [email],
-            subject: 'Verify Your Email - OTP Code',
-            html: generateOTPEmailHTML(otp, userName),
-            text: generateOTPEmailText(otp, userName),
-        });
-    } catch (error) {
-        console.error('❌ Error sending OTP email:', error);
-        throw new Error('Failed to send OTP email');
+const sendOTPEmail = async (email: string, otp: string, userName: string): Promise<void> => {
+  try {
+    const result = await getResendClient().emails.send({
+      from: getFrom(),
+      to: [email],
+      subject: 'Verify Your Email - OTP Code',
+      html: generateOTPEmailHTML(otp, userName),
+      text: generateOTPEmailText(otp, userName),
+    });
+
+    if (result.error) {
+      console.error('❌ Resend API error sending OTP email:', result.error);
+      throw new Error(`Resend API error: ${result.error.message}`);
     }
+    console.log('✅ OTP email sent successfully to:', email);
+  } catch (error) {
+    console.error('❌ Error sending OTP email:', error);
+    throw new Error('Failed to send OTP email');
+  }
 }
 
 // Send password reset email
-async function sendPasswordResetEmail(email: string, resetUrl: string, userName: string): Promise<void> {
-    try {
-        await resend.emails.send({
-            from: getFrom(),
-            to: [email],
-            subject: 'Reset Your Password - EOTCOpenSource',
-            html: generatePasswordResetEmailHTML(resetUrl, userName),
-            text: generatePasswordResetEmailText(resetUrl, userName),
-        });
-    } catch (error) {
-        console.error('❌ Error sending password reset email:', error);
-        throw new Error('Failed to send password reset email');
+const sendPasswordResetEmail = async (email: string, resetUrl: string, userName: string): Promise<void> => {
+  try {
+    const result = await getResendClient().emails.send({
+      from: getFrom(),
+      to: [email],
+      subject: 'Reset Your Password - EOTCOpenSource',
+      html: generatePasswordResetEmailHTML(resetUrl, userName),
+      text: generatePasswordResetEmailText(resetUrl, userName),
+    });
+
+    if (result.error) {
+      console.error('❌ Resend API error sending password reset email:', result.error);
+      throw new Error(`Resend API error: ${result.error.message}`);
     }
+    console.log('✅ Password reset email sent successfully to:', email);
+  } catch (error) {
+    console.error('❌ Error sending password reset email:', error);
+    throw new Error('Failed to send password reset email');
+  }
 }
 
 // Send generic email
-async function sendEmail(to: string, subject: string, html: string, text?: string): Promise<void> {
-    try {
-        await resend.emails.send({
-            from: getFrom(),
-            to: [to],
-            subject,
-            html,
-            ...(text ? { text } : {}),
-        });
-    } catch (error) {
-        console.error('❌ Error sending email:', error);
-        throw new Error('Failed to send email');
+const sendEmail = async (to: string, subject: string, html: string, text?: string): Promise<void> => {
+  try {
+    const result = await getResendClient().emails.send({
+      from: getFrom(),
+      to: [to],
+      subject,
+      html,
+      ...(text ? { text } : {}),
+    });
+
+    if (result.error) {
+      console.error('❌ Resend API error sending email:', result.error);
+      throw new Error(`Resend API error: ${result.error.message}`);
     }
+  } catch (error) {
+    console.error('❌ Error sending email:', error);
+    throw new Error('Failed to send email');
+  }
 }
 
 // Verify email configuration
-async function verifyConnection(): Promise<boolean> {
-    if (!process.env.RESEND_API_KEY) {
-        console.warn('⚠️  RESEND_API_KEY not set. Email service unavailable.');
-        return false;
-    }
-    console.log('✅ Email service (Resend) configured successfully');
-    return true;
+const verifyConnection = async (): Promise<boolean> => {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn('⚠️  RESEND_API_KEY not set. Email service unavailable.');
+    return false;
+  }
+  console.log('✅ Email service (Resend) configured successfully');
+  console.log(`   From address: ${getFrom()}`);
+  return true;
 }
 
 // Get configuration type for debugging
-function getConfigType(): string {
-    return 'Resend';
+const getConfigType = (): string => {
+  return 'Resend';
 }
 
 // --- HTML Templates ---
 
-function generateOTPEmailHTML(otp: string, userName: string): string {
-    return `
+const generateOTPEmailHTML = (otp: string, userName: string): string => {
+  return `
     <!DOCTYPE html>
     <html>
     <head>
@@ -127,11 +159,11 @@ function generateOTPEmailHTML(otp: string, userName: string): string {
 }
 
 function generateOTPEmailText(otp: string, userName: string): string {
-    return `Email Verification - EOTCOpenSource\n\nHello ${userName},\n\nYour OTP code: ${otp}\n\nThis code expires in 10 minutes. Do not share it.\n\nBest regards,\nThe EOTCOpenSource Team`;
+  return `Email Verification - EOTCOpenSource\n\nHello ${userName},\n\nYour OTP code: ${otp}\n\nThis code expires in 10 minutes. Do not share it.\n\nBest regards,\nThe EOTCOpenSource Team`;
 }
 
 function generatePasswordResetEmailHTML(resetUrl: string, userName: string): string {
-    return `
+  return `
     <!DOCTYPE html>
     <html>
     <head>
@@ -189,16 +221,16 @@ function generatePasswordResetEmailHTML(resetUrl: string, userName: string): str
 }
 
 function generatePasswordResetEmailText(resetUrl: string, userName: string): string {
-    return `Password Reset - EOTCOpenSource\n\nHello ${userName},\n\nReset your password: ${resetUrl}\n\nThis link expires in 15 minutes.\n\nBest regards,\nThe EOTCOpenSource Team`;
+  return `Password Reset - EOTCOpenSource\n\nHello ${userName},\n\nReset your password: ${resetUrl}\n\nThis link expires in 15 minutes.\n\nBest regards,\nThe EOTCOpenSource Team`;
 }
 
 // Export as object to maintain backward compatibility with controllers
 export const emailService = {
-    sendOTPEmail,
-    sendPasswordResetEmail,
-    sendEmail,
-    verifyConnection,
-    getConfigType,
+  sendOTPEmail,
+  sendPasswordResetEmail,
+  sendEmail,
+  verifyConnection,
+  getConfigType,
 };
 
 export default emailService;
