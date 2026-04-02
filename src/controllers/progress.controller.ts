@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { Progress, User } from '../models';
 import cache from '../utils/cache';
+import { publishMilestoneNotification } from '../utils/qstashService';
 
 // Log reading progress and update streak
 export const logReading = async (req: Request, res: Response): Promise<void> => {
@@ -88,6 +89,17 @@ export const logReading = async (req: Request, res: Response): Promise<void> => 
 
         // Update lastDate to today
         user.streak.lastDate = today;
+
+        // Check for streak milestone
+        const milestoneDays = [7, 30, 50, 100, 365];
+        if (lastDateStart && lastDateStart.getTime() === yesterday.getTime() && milestoneDays.includes(user.streak.current)) {
+            // Give them a milestone!
+            await publishMilestoneNotification(
+                String(user._id),
+                `${user.streak.current}-Day Reading Streak!`,
+                `You have read your bible for ${user.streak.current} consecutive days! Amazing dedication!`
+            );
+        }
 
         // Save both documents
         await Promise.all([

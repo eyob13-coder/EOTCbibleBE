@@ -8,6 +8,7 @@ import dayjs from 'dayjs';
 import { User, IUser, Progress, Bookmark, Note, Highlight, Topic, BlacklistedToken, OTP } from '../models';
 import { emailService } from '../utils/emailService';
 import { generateOTP, validateOTPFormat, calculateOTPExpiration, isOTPExpired } from '../utils/otpUtils';
+import { publishOnboardingSeries } from '../utils/qstashService';
 import axios from 'axios';
 import cloudinary from '../config/cloudinary.config';
 
@@ -387,6 +388,9 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
 
         // Save user to database (password will be hashed by pre-save hook)
         const savedUser = await newUser.save();
+
+        // 🚀 Trigger 3-part Onboarding Drip Campaign! (Day 0, Day 3, Day 7)
+        await publishOnboardingSeries((savedUser._id as any).toString());
 
         // Generate JWT token
         const token = generateToken({

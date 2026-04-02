@@ -16,6 +16,7 @@ export interface IUser extends Document {
     settings: {
         theme: string;
         fontSize: number;
+        notificationsEnabled: boolean;
     };
     streak: {
         current: number;
@@ -146,6 +147,10 @@ const userSchema = new Schema<IUser>({
             default: 16,
             min: [12, 'Font size must be at least 12'],
             max: [24, 'Font size cannot exceed 24']
+        },
+        notificationsEnabled: {
+            type: Boolean,
+            default: true
         }
     },
     streak: {

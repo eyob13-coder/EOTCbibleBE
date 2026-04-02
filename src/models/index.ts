@@ -8,3 +8,4 @@ export { Topic, ITopic, IVerseReference } from './topic.model';
 export { BlacklistedToken, IBlacklistedToken } from './blacklistedToken.model';
 export { OTP, IOTP } from './otp.model';
 export { ReadingPlan, IReadingPlan, IDailyReading, IDailyReadingItem } from './readingPlan.model';
+export { Subscriber, ISubscriber } from './subscriber.model';

@@ -22,8 +22,16 @@ import progressRoutes from './routes/progress.routes';
 import topicRoutes from './routes/topic.routes';
 import dataRoutes from './routes/data.routes';
 import readingPlanRoutes from './routes/readingPlan.routes';
+import notificationRoutes from './routes/notification.routes';
 import { cleanupExpiredTokens } from './utils/tokenCleanup';
 import { emailService } from './utils/emailService';
+import { 
+    verifyQStashConnection, 
+    createDailyReminderSchedule,
+    createStreakSaverSchedule,
+    createWeeklySummarySchedule,
+    createVotdSchedule
+} from './utils/qstashService';
 import { connectRedis, disconnectRedis, isRedisConnected } from './utils/cache';
 
 // Environment variable validation
@@ -134,6 +142,9 @@ app.use('/api/v1/data', dataRoutes);
 // Mount reading plan routes
 app.use('/api/v1/reading-plans', readingPlanRoutes);
 
+// Mount notification routes
+app.use('/api/v1/notifications', notificationRoutes);
+
 // Handle preflight requests
 app.options('*', corsMiddleware);
 
@@ -206,6 +217,12 @@ app.get('/', (req, res) => {
             data: {
                 deleteAll: '/api/v1/data/all',
                 deleteByType: '/api/v1/data/:type'
+            },
+            notifications: {
+                subscribe: '/api/v1/notifications/subscribe',
+                unsubscribe: '/api/v1/notifications/unsubscribe',
+                toggle: '/api/v1/notifications/toggle',
+                status: '/api/v1/notifications/status'
             }
         }
     });
@@ -272,6 +289,17 @@ const startServer = async (): Promise<void> => {
             const emailServiceWorking = await emailService.verifyConnection();
             if (!emailServiceWorking) {
                 console.warn('⚠️  Email service connection failed. OTP functionality may not work properly.');
+            }
+
+            // Init QStash connection & schedule
+            if (process.env.NODE_ENV === 'production' || process.env.QSTASH_TOKEN) {
+                const qstashWorking = await verifyQStashConnection();
+                if (qstashWorking) {
+                    await createDailyReminderSchedule();
+                    await createStreakSaverSchedule();
+                    await createWeeklySummarySchedule();
+                    await createVotdSchedule();
+                }
             }
 
             // Setup token cleanup job (run every 24 hours)
