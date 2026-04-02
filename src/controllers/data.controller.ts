@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
-import mongoose from 'mongoose';
-import { User, Bookmark, Note, Highlight, Progress, Topic } from '../models';
+import { Bookmark, Note, Highlight, Progress, Topic } from '../models';
 
 // Delete all user data except the user document itself
 export const deleteAllUserData = async (req: Request, res: Response): Promise<void> => {

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { Bookmark, IBookmark } from '../models';
-import { paginate, parsePaginationQuery, createPaginationResult, PaginationQuery } from '../utils/pagination';
+import { Bookmark } from '../models';
+import { parsePaginationQuery, createPaginationResult, PaginationQuery } from '../utils/pagination';
 import cache from '../utils/cache';
 
 // Interface for bookmark request body

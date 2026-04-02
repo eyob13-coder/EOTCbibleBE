@@ -1,9 +1,10 @@
 import request from 'supertest';
 import app from '../index';
 import * as jwt from 'jsonwebtoken';
-import { User, ReadingPlan, Subscriber } from '../models';
+import { BlacklistedToken, User, ReadingPlan, Subscriber } from '../models';
+import { Subscriber as SubscriberModel } from '../models/subscriber.model';
 import { emailService } from '../utils/emailService';
-import { verifyWebhookSignature, publishNotification } from '../utils/qstashService';
+import { publishNotification } from '../utils/qstashService';
 
 // Mock models and services
 jest.mock('../models', () => {
@@ -37,8 +38,8 @@ jest.mock('../models', () => {
 });
 
 // Add static methods to Subscriber mock from '../models'
-(Subscriber as any).findOne = jest.fn();
-(Subscriber as any).find = jest.fn();
+(Subscriber as unknown as { findOne: jest.Mock; find: jest.Mock }).findOne = jest.fn();
+(Subscriber as unknown as { findOne: jest.Mock; find: jest.Mock }).find = jest.fn();
 
 // Mock '../models/subscriber.model' since the controller imports Subscriber from there directly
 jest.mock('../models/subscriber.model', () => ({
@@ -93,13 +94,11 @@ describe('Notification Routes', () => {
         });
 
         // Re-setup BlacklistedToken mock (cleared by clearAllMocks)
-        const { BlacklistedToken } = require('../models');
-        BlacklistedToken.isBlacklisted.mockResolvedValue(false);
+        (BlacklistedToken.isBlacklisted as jest.Mock).mockResolvedValue(false);
     });
 
     describe('POST /api/v1/notifications/subscribe', () => {
         it('should subscribe a new email', async () => {
-            const { Subscriber: SubscriberModel } = require('../models/subscriber.model');
             (SubscriberModel.findOne as jest.Mock).mockResolvedValue(null);
 
             const response = await request(app)
@@ -123,7 +122,6 @@ describe('Notification Routes', () => {
     describe('POST /api/v1/notifications/unsubscribe', () => {
         it('should unsubscribe an email', async () => {
             const mockSub = { email: 'guest@example.com', isActive: true, save: jest.fn().mockResolvedValue(true) };
-            const { Subscriber: SubscriberModel } = require('../models/subscriber.model');
             (SubscriberModel.findOne as jest.Mock).mockResolvedValue(mockSub);
 
             const response = await request(app)
@@ -205,7 +203,6 @@ describe('Notification Routes', () => {
         });
 
         it('should process verse-of-the-day webhook', async () => {
-            const { Subscriber: SubscriberModel } = require('../models/subscriber.model');
             (SubscriberModel.find as jest.Mock).mockResolvedValue([{ email: 'sub@example.com', isActive: true }]);
 
             const response = await request(app)

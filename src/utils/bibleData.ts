@@ -85,7 +85,6 @@ export const getChaptersBetween = (
     const eBookName = endBook.toLowerCase();
 
     let started = false;
-    let finished = false;
 
     for (const book of COMM_BIBLE_DATA) {
         const currentName = book.book_name_en.toLowerCase();
@@ -116,10 +115,7 @@ export const getChaptersBetween = (
             });
         }
 
-        if (isEndBook) {
-            finished = true;
-            break;
-        }
+        if (isEndBook) break;
     }
 
     return chapters;

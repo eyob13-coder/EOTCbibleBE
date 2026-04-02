@@ -154,8 +154,8 @@ topicSchema.statics.findByVerse = function (
     userId: mongoose.Types.ObjectId,
     bookId: string,
     chapter: number,
-    verseStart: number,
-    verseEnd?: number
+    _verseStart: number,
+    _verseEnd?: number
 ) {
     return this.find({
         userId,

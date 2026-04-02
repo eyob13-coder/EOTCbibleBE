@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { Highlight, IHighlight } from '../models';
-import { paginate, parsePaginationQuery, createPaginationResult, PaginationQuery } from '../utils/pagination';
+import { Highlight } from '../models';
+import { parsePaginationQuery, createPaginationResult, PaginationQuery } from '../utils/pagination';
 import cache from '../utils/cache';
 
 // Interface for highlight request body

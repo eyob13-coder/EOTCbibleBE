@@ -252,7 +252,7 @@ app.get('/api/v1/health', (req, res) => {
 });
 
 // Test route for Sentry error tracking
-app.get('/debug-sentry', function mainHandler(req, res) {
+app.get('/debug-sentry', function mainHandler(_req, _res) {
     throw new Error('My first Sentry error!');
 });
 
@@ -260,7 +260,7 @@ app.get('/debug-sentry', function mainHandler(req, res) {
 Sentry.setupExpressErrorHandler(app);
 
 // Optional fallthrough error handler
-app.use(function onError(err: any, req: express.Request, res: express.Response, next: express.NextFunction) {
+app.use(function onError(err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) {
     // The error id is attached to `res.sentry` to be returned
     // and optionally displayed to the user for support.
     console.error('❌ Error:', err);

@@ -1,4 +1,3 @@
-import mongoose from 'mongoose';
 import { OTP } from '../models/otp.model';
 import { generateOTP, validateOTPFormat, calculateOTPExpiration, isOTPExpired } from '../utils/otpUtils';
 

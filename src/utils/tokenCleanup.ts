@@ -6,7 +6,7 @@ import { BlacklistedToken } from '../models';
  */
 export const cleanupExpiredTokens = async (): Promise<void> => {
     try {
-        const result = await BlacklistedToken.cleanupExpiredTokens();
+        await BlacklistedToken.cleanupExpiredTokens();
         console.log('✅ Cleaned up expired blacklisted tokens');
     } catch (error) {
         console.error('❌ Error cleaning up expired tokens:', error);

@@ -1,11 +1,10 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
 import dayjs from 'dayjs';
-import { User, IUser, Progress, Bookmark, Note, Highlight, Topic, BlacklistedToken, OTP } from '../models';
+import { User, Progress, Bookmark, Note, Highlight, Topic, BlacklistedToken, OTP } from '../models';
 import { emailService } from '../utils/emailService';
 import { generateOTP, validateOTPFormat, calculateOTPExpiration, isOTPExpired } from '../utils/otpUtils';
 import { publishOnboardingSeries } from '../utils/qstashService';
@@ -286,7 +285,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         // Send OTP email
         try {
             await emailService.sendOTPEmail(email, otp, name);
-        } catch (emailError) {
+        } catch {
             // If email fails, delete the OTP and return error
             await OTP.findByIdAndDelete(newOTP._id);
             res.status(500).json({
@@ -474,7 +473,7 @@ export const resendOTP = async (req: Request, res: Response): Promise<void> => {
         // Send OTP email
         try {
             await emailService.sendOTPEmail(email, otp, existingOTP.registrationData?.name || 'User');
-        } catch (emailError) {
+        } catch {
             res.status(500).json({
                 success: false,
                 message: 'Failed to send OTP email. Please try again.'
@@ -759,7 +758,7 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
                 success: true,
                 message: 'Logout successful - token invalidated'
             });
-        } catch (jwtError) {
+        } catch {
             // If token is invalid, still return success (client should clear token anyway)
             res.status(200).json({
                 success: true,

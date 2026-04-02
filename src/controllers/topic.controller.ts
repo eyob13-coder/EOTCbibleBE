@@ -556,7 +556,6 @@ export const removeVerses = async (req: Request, res: Response): Promise<void> =
 
         // Remove verses
         const removedVerses: IVerseReference[] = [];
-        const originalCount = topic.verses.length;
 
         for (const verse of verses) {
             if (!verse.bookId || !verse.chapter || !verse.verseStart || !verse.verseCount) {

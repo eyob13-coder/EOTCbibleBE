@@ -1,5 +1,4 @@
 import request from 'supertest';
-import mongoose from 'mongoose';
 import app from '../index';
 import { User, Bookmark, Note, Highlight, Progress, Topic } from '../models';
 import jwt from 'jsonwebtoken';

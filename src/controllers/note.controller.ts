@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { Note, INote } from '../models';
-import { paginate, parsePaginationQuery, createPaginationResult, PaginationQuery } from '../utils/pagination';
+import { Note } from '../models';
+import { parsePaginationQuery, createPaginationResult, PaginationQuery } from '../utils/pagination';
 import cache from '../utils/cache';
 
 // Interface for note request body
