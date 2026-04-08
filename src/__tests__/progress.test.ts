@@ -302,6 +302,79 @@ describe('Progress API Endpoints', () => {
         });
     });
 
+    describe('POST /api/v1/progress/sync-verses', () => {
+        it('should sync verse readings and update streak', async () => {
+            const payload = {
+                readings: [
+                    {
+                        bookId: 'Genesis',
+                        chapter: 1,
+                        verse: 1,
+                        readDuration: 3000,
+                        timestamp: Date.now()
+                    }
+                ]
+            };
+
+            const response = await request(app)
+                .post('/api/v1/progress/sync-verses')
+                .set('Authorization', `Bearer ${authToken}`)
+                .send(payload)
+                .expect(200);
+
+            expect(response.body.success).toBe(true);
+            expect(response.body.data.versesSynced).toBe(1);
+            expect(response.body.data.totalChaptersRead).toBe(1);
+            expect(response.body.data.totalVersesRead).toBe(1);
+            expect(response.body.data.streakUpdated).toBe(true);
+            expect(response.body.data.streak.current).toBe(1);
+
+            const savedProgress = await Progress.findOne({ userId: testUser._id });
+            expect(savedProgress).toBeDefined();
+            expect(savedProgress?.chaptersRead.has('Genesis:1')).toBe(true);
+            expect(savedProgress?.chaptersRead.get('Genesis:1')).toContain(1);
+
+            const savedUser = await User.findById(testUser._id);
+            expect(savedUser?.streak.current).toBe(1);
+        });
+
+        it('should ignore readings below minimum duration', async () => {
+            const payload = {
+                readings: [
+                    {
+                        bookId: 'Genesis',
+                        chapter: 1,
+                        verse: 1,
+                        readDuration: 1000,
+                        timestamp: Date.now()
+                    }
+                ]
+            };
+
+            const response = await request(app)
+                .post('/api/v1/progress/sync-verses')
+                .set('Authorization', `Bearer ${authToken}`)
+                .send(payload)
+                .expect(200);
+
+            expect(response.body.success).toBe(true);
+            expect(response.body.message).toBe('No valid readings to sync');
+
+            const savedProgress = await Progress.findOne({ userId: testUser._id });
+            expect(savedProgress).toBeNull();
+        });
+
+        it('should fail without authentication', async () => {
+            const response = await request(app)
+                .post('/api/v1/progress/sync-verses')
+                .send({ readings: [] })
+                .expect(401);
+
+            expect(response.body.success).toBe(false);
+            expect(response.body.message).toBe('Access token is required');
+        });
+    });
+
     describe('GET /api/v1/progress', () => {
         it('should get user progress when progress exists', async () => {
             // Create some progress data
@@ -326,7 +399,8 @@ describe('Progress API Endpoints', () => {
             expect(response.body.data.progress.chaptersRead).toHaveProperty('Genesis:1');
             expect(response.body.data.progress.chaptersRead).toHaveProperty('Genesis:2');
             expect(response.body.data.progress.chaptersRead).toHaveProperty('Exodus:1');
-            expect(response.body.data.progress.totalChaptersRead).toBe(0);
+            expect(response.body.data.progress.totalChaptersRead).toBe(3);
+            expect(response.body.data.progress.totalVersesRead).toBe(0);
             expect(response.body.data.streak).toBeDefined();
         });
 
@@ -341,6 +415,7 @@ describe('Progress API Endpoints', () => {
             expect(response.body.data.progress.userId).toBe(testUser._id.toString());
             expect(response.body.data.progress.chaptersRead).toEqual({});
             expect(response.body.data.progress.totalChaptersRead).toBe(0);
+            expect(response.body.data.progress.totalVersesRead).toBe(0);
             expect(response.body.data.streak).toBeDefined();
         });
 
@@ -377,7 +452,8 @@ describe('Progress API Endpoints', () => {
             expect(response.body.data.bookId).toBe('Genesis');
             expect(response.body.data.chaptersRead).toHaveProperty('1');
             expect(response.body.data.chaptersRead).toHaveProperty('2');
-            expect(response.body.data.totalChaptersRead).toBe(0);
+            expect(response.body.data.totalChaptersRead).toBe(2);
+            expect(response.body.data.totalVersesRead).toBe(0);
         });
 
         it('should return empty progress when no progress exists for book', async () => {
@@ -391,6 +467,7 @@ describe('Progress API Endpoints', () => {
             expect(response.body.data.bookId).toBe('Genesis');
             expect(response.body.data.chaptersRead).toEqual({});
             expect(response.body.data.totalChaptersRead).toBe(0);
+            expect(response.body.data.totalVersesRead).toBe(0);
         });
 
         it('should fail when bookId is missing', async () => {

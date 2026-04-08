@@ -5,6 +5,7 @@ export interface IProgress extends Document {
     userId: mongoose.Types.ObjectId;
     chaptersRead: Map<string, number[]>;
     totalChaptersRead: number;
+    totalVersesRead: number;
     addChapterRead(bookId: string, chapter: number, verse: number): Promise<IProgress>;
     getChaptersForBook(bookId: string): { [key: number]: number[] };
 }
@@ -27,11 +28,17 @@ const progressSchema = new Schema<IProgress>({
 
 // Note: userId index is created by compound indexes in other models
 
-// Virtual for getting total chapters read
+// Virtual for getting total chapters read (distinct chapters with any progress)
 progressSchema.virtual('totalChaptersRead').get(function () {
+    return this.chaptersRead.size;
+});
+
+// Virtual for getting total verses read (across all chapters)
+// Note: verse 0 is treated as a "chapter fully read" marker for legacy clients and is excluded.
+progressSchema.virtual('totalVersesRead').get(function () {
     let total = 0;
     this.chaptersRead.forEach((verses: number[]) => {
-        total += verses.length;
+        total += verses.filter((v) => v > 0).length;
     });
     return total;
 });

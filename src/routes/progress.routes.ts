@@ -2,7 +2,8 @@ import { Router } from 'express';
 import {
     logReading,
     getProgress,
-    getBookProgress
+    getBookProgress,
+    syncVerseProgress
 } from '../controllers/progress.controller';
 import { protect } from '../middleware/auth.middleware';
 
@@ -87,6 +88,88 @@ router.use(protect);
  *               $ref: '#/components/schemas/Error'
  */
 router.post('/log-reading', logReading);
+
+/**
+ * @swagger
+ * /api/v1/progress/sync-verses:
+ *   post:
+ *     summary: Batch sync verse-level reading progress from reading tracker
+ *     tags: [Progress]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - readings
+ *             properties:
+ *               readings:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - bookId
+ *                     - chapter
+ *                     - verse
+ *                   properties:
+ *                     bookId:
+ *                       type: string
+ *                       description: Book identifier
+ *                       example: "Genesis"
+ *                     chapter:
+ *                       type: number
+ *                       description: Chapter number
+ *                       example: 1
+ *                     verse:
+ *                       type: number
+ *                       description: Verse number
+ *                       example: 1
+ *                     readDuration:
+ *                       type: number
+ *                       description: Time spent reading in milliseconds
+ *                       example: 5000
+ *                     timestamp:
+ *                       type: number
+ *                       description: Unix timestamp when verse was read
+ *                       example: 1704067200000
+ *     responses:
+ *       200:
+ *         description: Verses synced successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Synced 5 new verses successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     versesSynced:
+ *                       type: number
+ *                       description: Number of new verses synced
+ *                       example: 5
+ *                     totalVersesRead:
+ *                       type: number
+ *                       description: Total verses read across all books
+ *                       example: 150
+ *                     streakUpdated:
+ *                       type: boolean
+ *                       description: Whether the streak was updated
+ *                       example: true
+ *       400:
+ *         description: Bad request - invalid readings format
+ *       401:
+ *         description: Unauthorized - invalid or missing token
+ */
+router.post('/sync-verses', syncVerseProgress);
 
 /**
  * @swagger
