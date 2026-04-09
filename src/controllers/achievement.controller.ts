@@ -98,3 +98,21 @@ export const notifyAchievements = async (req: Request, res: Response): Promise<v
   }
 };
 
+export const getUnlockedAchievements = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = req.user;
+    if (!user?._id) {
+      res.status(401).json({ success: false, message: 'User not authenticated' });
+      return;
+    }
+
+    const unlocked = await UserAchievement.find({ userId: user._id }).select('achievementId');
+    const unlockedIds = unlocked.map((u) => u.achievementId);
+
+    res.status(200).json({ success: true, unlockedIds });
+  } catch (error) {
+    console.error('Error fetching unlocked achievements:', error);
+    res.status(500).json({ success: false, message: 'Internal server error while fetching unlocked achievements' });
+  }
+};
+

@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import { protect } from '../middleware/auth.middleware';
-import { notifyAchievements } from '../controllers/achievement.controller';
+import { notifyAchievements, getUnlockedAchievements } from '../controllers/achievement.controller';
 
 const router = Router();
+
+router.get('/', protect, getUnlockedAchievements);
 
 /**
  * @swagger
