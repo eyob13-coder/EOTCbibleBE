@@ -1,7 +1,7 @@
 import request from 'supertest';
 import app from '../index';
 import * as jwt from 'jsonwebtoken';
-import { User, Progress, Bookmark, Note, Highlight, Topic } from '../models';
+import { User, Progress, UserAchievement, Bookmark, Note, Highlight, Topic } from '../models';
 
 // Mock the models to avoid database operations in tests
 jest.mock('../models', () => ({
@@ -14,6 +14,9 @@ jest.mock('../models', () => ({
         deleteMany: jest.fn(),
     },
     Progress: {
+        deleteMany: jest.fn(),
+    },
+    UserAchievement: {
         deleteMany: jest.fn(),
     },
     Bookmark: {

@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
 import dayjs from 'dayjs';
-import { User, Progress, Bookmark, Note, Highlight, Topic, BlacklistedToken, OTP } from '../models';
+import { User, Progress, UserAchievement, Bookmark, Note, Highlight, Topic, BlacklistedToken, OTP } from '../models';
 import { emailService } from '../utils/emailService';
 import { generateOTP, validateOTPFormat, calculateOTPExpiration, isOTPExpired } from '../utils/otpUtils';
 import { publishOnboardingSeries } from '../utils/qstashService';
@@ -21,7 +21,7 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID || '';
 const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET || '';
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
+
 
 // Interface for registration request body
 interface RegisterRequest {
@@ -796,6 +796,9 @@ export const deleteAccount = async (req: Request, res: Response): Promise<void> 
             // Delete user's progress records
             Progress.deleteMany({ userId }),
 
+            // Delete user's achievements notification records
+            UserAchievement.deleteMany({ userId }),
+
             // Delete user's bookmarks
             Bookmark.deleteMany({ userId }),
 
@@ -916,7 +919,7 @@ export const uploadAvatar = async (
 
         // When using Cloudinary storage, file.path contains the full secure URL
         // We log it for debugging, but we strictly use the path provided by Cloudinary.
-        console.log('🖼️ Upload File Info:', JSON.stringify(file, null, 2));
+        console.log(' Upload File Info:', JSON.stringify(file, null, 2));
 
         // In multer-storage-cloudinary, 'path' is usually the HTTPS URL.
         // But some versions or configs might use 'secure_url' or 'url'.
@@ -1139,68 +1142,5 @@ export const loginWithFacebook = async (req: Request, res: Response): Promise<vo
     } catch (error: any) {
         console.error('Facebook login error:', error?.response?.data || error?.message || error);
         res.status(401).json({ success: false, message: 'Facebook token verification failed' });
-    }
-};
-
-// Social login: Telegram (expects Telegram login widget payload)
-export const loginWithTelegram = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const payload = req.body as Record<string, any>;
-        // Telegram sends id, first_name, last_name, username, photo_url, auth_date, hash
-        const { id, first_name, last_name, username, photo_url, auth_date, hash } = payload as any;
-
-        if (!id || !auth_date || !hash) {
-            res.status(400).json({ success: false, message: 'Invalid Telegram payload' });
-            return;
-        }
-        if (!TELEGRAM_BOT_TOKEN) {
-            res.status(500).json({ success: false, message: 'Server is not configured for Telegram login' });
-            return;
-        }
-
-        // Verify hash per Telegram docs
-        const dataCheckArr = Object.keys(payload)
-            .filter((k) => k !== 'hash' && payload[k] !== undefined && payload[k] !== null)
-            .sort()
-            .map((k) => `${k}=${payload[k]}`);
-        const dataCheckString = dataCheckArr.join('\n');
-        const secret = crypto.createHash('sha256').update(TELEGRAM_BOT_TOKEN).digest();
-        const hmac = crypto.createHmac('sha256', secret).update(dataCheckString).digest('hex');
-        if (hmac !== hash) {
-            res.status(401).json({ success: false, message: 'Telegram hash verification failed' });
-            return;
-        }
-
-        const telegramId = String(id);
-        const name = [first_name, last_name].filter(Boolean).join(' ') || username || 'Telegram User';
-        const avatarUrl = photo_url;
-        // Telegram does not provide email
-        let user = await User.findOne({ telegramId }).exec();
-        if (!user) {
-            user = new User({
-                name,
-                email: `${telegramId}@telegram.local`,
-                password: undefined,
-                telegramId,
-                authProvider: 'telegram',
-                isEmailVerified: false,
-                avatarUrl
-            } as any);
-        } else {
-            user.authProvider = user.authProvider || 'telegram';
-            if (avatarUrl && !user.avatarUrl) user.avatarUrl = avatarUrl;
-        }
-
-        const saved = await user.save();
-        const token = generateToken({ userId: (saved._id as any).toString(), email: saved.email, name: saved.name });
-
-        res.status(200).json({
-            success: true,
-            message: 'Login with Telegram successful',
-            data: { user: { id: saved._id, name: saved.name, email: saved.email, avatarUrl: saved.avatarUrl }, token }
-        });
-    } catch (error: any) {
-        console.error('Telegram login error:', error?.message || error);
-        res.status(401).json({ success: false, message: 'Telegram verification failed' });
     }
 };

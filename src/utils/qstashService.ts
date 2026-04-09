@@ -35,6 +35,21 @@ const getReceiver = (): Receiver => {
     return _receiver;
 };
 
+const resolvePublicUrl = (urlOrPath: string): string => {
+    if (/^https?:\/\//i.test(urlOrPath)) {
+        return urlOrPath;
+    }
+
+    const appUrl = process.env.APP_URL;
+    if (!appUrl) {
+        throw new Error('APP_URL is not configured (required for QStash destinations)');
+    }
+
+    const base = appUrl.replace(/\/+$/, '');
+    const path = urlOrPath.startsWith('/') ? urlOrPath : `/${urlOrPath}`;
+    return `${base}${path}`;
+};
+
 /**
  * Publish a notification message to QStash, which will call the webhook endpoint
  */
@@ -51,7 +66,7 @@ export const publishNotification = async (payload: {
 
     const client = getClient();
     const res = await client.publishJSON({
-        url: `${webhookUrl}/${payload.type}`,
+        url: resolvePublicUrl(`${webhookUrl}/${payload.type}`),
         body: payload,
     });
 
@@ -86,7 +101,7 @@ const ensureSchedule = async (destinationPath: string, cron: string, payload: an
         return null;
     }
 
-    const fullUrl = `${webhookUrl}${destinationPath}`;
+    const fullUrl = resolvePublicUrl(`${webhookUrl}${destinationPath}`);
     try {
         const client = getClient();
         
@@ -172,7 +187,7 @@ export const publishMilestoneNotification = async (userId: string, title: string
     try {
         const client = getClient();
         await client.publishJSON({
-            url: `${webhookUrl}/milestone`,
+            url: resolvePublicUrl(`${webhookUrl}/milestone`),
             body: { type: 'milestone', userId, title, message },
         });
     } catch (e) {
@@ -190,7 +205,7 @@ export const publishOnboardingSeries = async (userId: string): Promise<void> => 
 
     try {
         const client = getClient();
-        const url = `${webhookUrl}/onboarding`;
+        const url = resolvePublicUrl(`${webhookUrl}/onboarding`);
 
         // Day 0: Instant Welcome
         await client.publishJSON({
@@ -217,6 +232,28 @@ export const publishOnboardingSeries = async (userId: string): Promise<void> => 
     } catch (e) {
         console.error('Failed to queue onboarding series', e);
     }
+};
+
+export const publishAchievementEmailJob = async (payload: Record<string, unknown>): Promise<{ messageId: string }> => {
+    const destinationOverride = process.env.QSTASH_ACHIEVEMENT_WORKER_URL;
+    const destination = destinationOverride || '/api/v1/workers/send-achievement-email';
+
+    const fullUrl = resolvePublicUrl(destination);
+    
+    // QStash cloud cannot reach your local machine's "localhost" without a tunnel (like ngrok).
+    // If the URL is localhost, silently mock success to prevent development crashes!
+    if (fullUrl.includes('localhost') || fullUrl.includes('127.0.0.1')) {
+        console.warn(`⚠️ Skipped QStash publish to localhost: ${fullUrl}`);
+        return { messageId: 'mock-local-message-id' };
+    }
+
+    const client = getClient();
+    const res = await client.publishJSON({
+        url: fullUrl,
+        body: payload,
+    });
+
+    return { messageId: res.messageId };
 };
 
 /**
@@ -270,6 +307,7 @@ export default {
     createVotdSchedule,
     publishMilestoneNotification,
     publishOnboardingSeries,
+    publishAchievementEmailJob,
     listSchedules,
     deleteSchedule,
     verifyQStashConnection,

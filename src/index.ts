@@ -19,10 +19,12 @@ import bookmarkRoutes from './routes/bookmark.routes';
 import noteRoutes from './routes/note.routes';
 import highlightRoutes from './routes/highlight.routes';
 import progressRoutes from './routes/progress.routes';
+import achievementRoutes from './routes/achievement.routes';
 import topicRoutes from './routes/topic.routes';
 import dataRoutes from './routes/data.routes';
 import readingPlanRoutes from './routes/readingPlan.routes';
 import notificationRoutes from './routes/notification.routes';
+import workerRoutes from './routes/worker.routes';
 import { cleanupExpiredTokens } from './utils/tokenCleanup';
 import { emailService } from './utils/emailService';
 import { 
@@ -133,6 +135,9 @@ app.use('/api/v1/highlights', highlightRoutes);
 // Mount progress routes
 app.use('/api/v1/progress', progressRoutes);
 
+// Mount achievements routes
+app.use('/api/v1/achievements', achievementRoutes);
+
 // Mount topic routes
 app.use('/api/v1/topics', topicRoutes);
 
@@ -144,6 +149,9 @@ app.use('/api/v1/reading-plans', readingPlanRoutes);
 
 // Mount notification routes
 app.use('/api/v1/notifications', notificationRoutes);
+
+// Mount worker routes (QStash / internal jobs)
+app.use('/api/v1/workers', workerRoutes);
 
 // Handle preflight requests
 app.options('*', corsMiddleware);

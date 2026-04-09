@@ -8,8 +8,7 @@ export interface IUser extends Document {
     password: string;
     googleId?: string;
     facebookId?: string;
-    telegramId?: string;
-    authProvider?: 'email' | 'google' | 'facebook' | 'telegram';
+    authProvider?: 'email' | 'google' | 'facebook';
     avatarUrl?: string;
     isEmailVerified: boolean;
     emailVerifiedAt?: Date;
@@ -110,13 +109,9 @@ const userSchema = new Schema<IUser>({
         type: String,
         sparse: true
     },
-    telegramId: {
-        type: String,
-        sparse: true
-    },
     authProvider: {
         type: String,
-        enum: ['email', 'google', 'facebook', 'telegram'],
+        enum: ['email', 'google', 'facebook'],
         default: 'email'
     },
     avatarUrl: {
