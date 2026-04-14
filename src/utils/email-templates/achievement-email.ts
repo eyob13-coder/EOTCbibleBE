@@ -15,7 +15,7 @@ export const generateAchievementEmailHTML = (params: {
   achievementTier: AchievementTier;
   ctaUrl?: string;
 }): string => {
-  const ctaUrl = params.ctaUrl || 'https://eotcbible.org/dashboard/achievements';
+  const ctaUrl = params.ctaUrl || 'https://nehemiah-osc.org/dashboard/achievements';
   const emoji = params.achievementEmoji || '🎉';
   const tier = params.achievementTier;
   const colors = tierColors[tier];

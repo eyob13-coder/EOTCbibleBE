@@ -55,7 +55,7 @@ export const sendAchievementEmailWorker = async (req: Request, res: Response): P
       achievementDescription: body.achievementDescription,
       achievementEmoji: body.achievementEmoji || '',
       achievementTier: body.achievementTier,
-      ctaUrl: 'https://eotcbible.org/dashboard/achievements',
+      ctaUrl: 'https://nehemiah-osc.org/dashboard/achievements',
     });
 
     await emailService.sendEmail(body.email, subject, html);
