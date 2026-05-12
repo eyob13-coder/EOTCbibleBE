@@ -127,10 +127,6 @@ export const getPlans = async (req: Request, res: Response): Promise<void> => {
 
         const sortObj = { createdAt: -1 } as const;
 
-        // Populate specific fields if needed, e.g. creator info for public plans?
-        // For now standard pagination.
-
-        // Get total count for pagination
         // Create cache key
         const cacheKey = `plans:list:${user._id}:${JSON.stringify(req.query)}:${paginationOptions.page}:${paginationOptions.limit}`;
 
@@ -147,8 +143,9 @@ export const getPlans = async (req: Request, res: Response): Promise<void> => {
 
         const totalItems = await ReadingPlan.countDocuments(filter);
 
-        // Get paginated plans
+        // Get paginated plans — populate userId to include creator's name & avatar
         const plans = await ReadingPlan.find(filter)
+            .populate('userId', 'name avatarUrl')
             .sort(sortObj)
             .skip(paginationOptions.skip)
             .limit(paginationOptions.limit)
