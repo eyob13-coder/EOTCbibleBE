@@ -89,8 +89,8 @@ export const getNotes = async (req: Request, res: Response): Promise<void> => {
 
         // Create pagination result
         const paginationResult = createPaginationResult(
-            notes,
-            totalItems,
+            notes as any[],
+            totalItems as number,
             paginationOptions.page,
             paginationOptions.limit
         );
@@ -509,8 +509,8 @@ export const getPublicNotes = async (req: Request, res: Response): Promise<void>
 
         // Create pagination result
         const paginationResult = createPaginationResult(
-            notes,
-            totalItems,
+            notes as any[],
+            totalItems as number,
             paginationOptions.page,
             paginationOptions.limit
         );
