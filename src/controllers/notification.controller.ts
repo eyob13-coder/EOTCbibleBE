@@ -450,14 +450,32 @@ export const webhookVotd = async (req: Request, res: Response): Promise<void> =>
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
         let sent = 0;
         
-        const verseText = "For God so loved the world, that he gave his only begotten Son...";
-        const verseRef = "John 3:16";
+        let verseText = 'እኔ ግን በጌታችን በኢየሱስ ክርስቶስ መስቀል እንጂ በሌላ አልመካም፤ በእኔ ዘንድ ዓለሙ የሞተ ነው፥ እኔም በዓለሙ ዘንድ የሞትሁ ነኝ።';
+        let verseRef = 'ገላ 6:14';
+        let subject = '📖 የዕለቱ ጥቅስ (Verse of the Day)';
+
+        try {
+            const votdRes = await fetch(`${frontendUrl}/api/v1/votd`);
+            if (votdRes.ok) {
+                const json = (await votdRes.json()) as any;
+                if (json?.data?.verse?.text) {
+                    verseText = json.data.verse.text;
+                    const occasion = json.data.liturgical?.occasionAm ? ` (${json.data.liturgical.occasionAm})` : '';
+                    verseRef = `${json.data.verse.reference}${occasion}`;
+                    if (json.data.liturgical?.occasionAm) {
+                        subject = `📖 የዕለቱ ጥቅስ - ${json.data.liturgical.occasionAm}`;
+                    }
+                }
+            }
+        } catch (fetchErr) {
+            console.error('Failed to fetch dynamic VOTD from frontend API, using fallback:', fetchErr);
+        }
 
         for (const sub of subscribers) {
              try {
                 await emailService.sendEmail(
                     sub.email,
-                    '📖 Verse of the Day',
+                    subject,
                     generatePremiumVotdHTML(verseText, verseRef, `${frontendUrl}/unsubscribe?email=${encodeURIComponent(sub.email)}`)
                 );
                 sent++;
